@@ -1,0 +1,28 @@
+meta {
+  name: CREATE Publication
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://192.168.2.103:5000/api/publications
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "description": "Description de la publication",
+    "user": "6512ab3cdef4567890abcd12",
+    "urlsPhotos": ["https://images.unsplash.com/photo-1574655563118-3e3eab32015d?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", "https://plus.unsplash.com/premium_photo-1690205357200-425b3b64b54d?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTN8fGRyZXNzfGVufDB8fDB8fHww"],
+    "articles": [
+      {
+        "urlPhoto": "https://images.unsplash.com/photo-1618932260643-eee4a2f652a6?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8ZHJlc3N8ZW58MHx8MHx8fDA%3D",
+        "titre": "Article 1",
+        "description": "Desc article 1",
+        "prix": 75,
+        "lien": "https://google.com"
+      }
+    ]
+  }
+}

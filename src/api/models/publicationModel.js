@@ -7,8 +7,7 @@ const publicationSchema = new mongoose.Schema(
             required: true,
         },
         user: {
-            type: require('mongoose').Schema.Types.ObjectId,
-            ref: 'User',
+            type: String,
             required: true
         },
         urlsPhotos: [{ type: String }]

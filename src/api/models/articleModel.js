@@ -8,8 +8,7 @@ const articleSchema = new mongoose.Schema({
     prix: { type: Number, required: true },
     lien: { type: String },
     user: {
-        type: require('mongoose').Schema.Types.ObjectId,
-        ref: 'User',
+        type: String,
         required: true
     }
 });

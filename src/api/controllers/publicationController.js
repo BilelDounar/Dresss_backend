@@ -176,3 +176,22 @@ exports.getArticlesByPublication = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// @desc    Récupérer toutes les publications d'un utilisateur (y compris celles déjà vues)
+// @route   GET /api/publications/user/:userId
+exports.getPublicationsByUser = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        if (!userId) {
+            return res.status(400).json({ message: 'userId manquant dans les paramètres' });
+        }
+
+        // Retourne toutes les publications créées par cet utilisateur, sans filtrer celles déjà vues
+        const publications = await Publication.find({ user: userId });
+
+        res.status(200).json(publications);
+    } catch (err) {
+        console.error('Erreur dans getPublicationsByUser:', err);
+        res.status(500).json({ message: err.message });
+    }
+};

@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 
@@ -19,8 +20,14 @@ app.use(express.urlencoded({ extended: true }));
 // Active CORS pour autoriser les requêtes cross-origin (depuis votre frontend)
 app.use(cors());
 
+// --- Ensure uploads directory exists (for Multer diskStorage) ---
+const uploadsDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 // Expose le dossier uploads pour servir les images
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use('/uploads', express.static(uploadsDir));
 
 // Sécurise l'application en configurant divers en-têtes HTTP
 app.use(helmet());

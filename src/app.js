@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const path = require('path');
 
 const app = express();
 
@@ -17,6 +18,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Active CORS pour autoriser les requêtes cross-origin (depuis votre frontend)
 app.use(cors());
+
+// Expose le dossier uploads pour servir les images
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Sécurise l'application en configurant divers en-têtes HTTP
 app.use(helmet());

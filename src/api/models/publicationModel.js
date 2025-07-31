@@ -10,7 +10,27 @@ const publicationSchema = new mongoose.Schema(
             type: String,
             required: true
         },
-        urlsPhotos: [{ type: String }]
+        urlsPhotos: [{ type: String }],
+        likes: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+        shares: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+        comments: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+        saved: {
+            type: Number,
+            default: 0,
+            min: 0,
+        }
     },
     {
         timestamps: {

@@ -4,24 +4,10 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const crypto = require('crypto');
+const compressImages = require('../../utils/compressImages');
 
-// Création d'un storage personnalisé pour enregistrer les fichiers sur disque
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        // Dossier uploads/ à la racine du backend
-        cb(null, path.join(process.cwd(), 'uploads'));
-    },
-    filename: (req, file, cb) => {
-        // Récupération du userId si déjà parsé par Multer, sinon "unknown"
-        const userId = req.body.userId || 'unknown';
-        const type = file.fieldname === 'publicationPhoto' ? 'photo' : 'article';
-        const date = new Date().toISOString().replace(/[:.]/g, '-');
-        const random = crypto.randomBytes(3).toString('hex'); // 6 caractères
-        const ext = path.extname(file.originalname);
-        cb(null, `${userId}-${type}-${date}-${random}${ext}`);
-    }
-});
-
+// Stockage en mémoire : les buffers seront compressés puis écrits sur disque par compressImages
+const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 const {
@@ -32,7 +18,8 @@ const {
     deletePublication,
     getArticlesByPublication,
     markPublicationAsViewed,
-    getPublicationsByUser
+    getPublicationsByUser,
+    likePublication
 } = require('../controllers/publicationController');
 
 router
@@ -43,6 +30,7 @@ router
             { name: 'publicationPhoto', maxCount: 10 },
             { name: 'articlePhotos', maxCount: 10 }
         ]),
+        compressImages,
         createPublication
     );
 
@@ -57,6 +45,8 @@ router
 router.route('/:id/view').post(markPublicationAsViewed);
 
 router.route('/:id/articles').get(getArticlesByPublication);
+
+router.route('/:id/like').post(likePublication);
 
 // router.post('/publications', createPublication);
 

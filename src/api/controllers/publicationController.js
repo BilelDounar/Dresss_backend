@@ -168,9 +168,6 @@ exports.markPublicationAsViewed = async (req, res) => {
 exports.getArticlesByPublication = async (req, res) => {
     try {
         const articles = await Article.find({ publicationId: req.params.id });
-        if (!articles || articles.length === 0) {
-            return res.status(404).json({ message: 'Aucun article trouvé pour cette publication' });
-        }
         res.status(200).json(articles);
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -192,6 +189,32 @@ exports.getPublicationsByUser = async (req, res) => {
         res.status(200).json(publications);
     } catch (err) {
         console.error('Erreur dans getPublicationsByUser:', err);
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// @desc    Ajouter ou retirer un like à une publication
+// @route   POST /api/publications/:id/like
+exports.likePublication = async (req, res) => {
+    try {
+        const { increment } = req.body;
+        const incValue = parseInt(increment, 10);
+        if (![1, -1].includes(incValue)) {
+            return res.status(400).json({ message: 'increment must be 1 or -1' });
+        }
+
+        const publication = await Publication.findByIdAndUpdate(
+            req.params.id,
+            { $inc: { likes: incValue } },
+            { new: true }
+        );
+
+        if (!publication) {
+            return res.status(404).json({ message: 'Publication non trouvée' });
+        }
+        res.status(200).json({ likes: publication.likes });
+    } catch (err) {
+        console.error('Erreur dans likePublication:', err);
         res.status(500).json({ message: err.message });
     }
 };

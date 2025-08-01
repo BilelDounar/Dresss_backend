@@ -31,13 +31,14 @@ module.exports = async (req, res, next) => {
 
             req.files[field] = await Promise.all(
                 req.files[field].map(async file => {
-                    // Construction d'un nom de fichier lisible → userId-type-date-random.ext
+                    // Construction d'un nom de fichier lisible → publicationId-userId-type-date-random.ext
+                    const publicationId = (req.body.publicationId || req.params?.id || 'tmp').toString();
                     const userId = (req.body.userId || 'unknown').toString();
                     const type = file.fieldname === 'publicationPhoto' ? 'photo' : 'article';
                     const date = new Date().toISOString().replace(/[:.]/g, '-');
                     const random = crypto.randomBytes(3).toString('hex'); // 6 caractères aléatoires
                     const ext = path.extname(file.originalname).toLowerCase(); // .jpg ou .png
-                    const filename = `${userId}-${type}-${date}-${random}${ext}`;
+                    const filename = `${publicationId}-${userId}-${type}-${date}-${random}${ext}`;
                     const fullPath = path.join(uploadsDir, filename);
 
                     // Pipeline sharp

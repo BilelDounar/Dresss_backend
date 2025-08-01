@@ -2,12 +2,13 @@ const mongoose = require('mongoose');
 const Publication = require('../models/publicationModel');
 const Article = require('../models/articleModel');
 const ViewedPublication = require('../models/viewedPublicationModel');
+const fs = require('fs');
+const path = require('path');
 
 // @desc    Créer une publication
 // @route   POST /api/publications
 exports.createPublication = async (req, res) => {
     try {
-        // Récupération des champs texte envoyés sous multipart/form-data
         const description = req.body.description;
         const user = req.body.user || req.body.userId; // compatibilité avec le frontend
 
@@ -22,31 +23,62 @@ exports.createPublication = async (req, res) => {
             }
         }
 
-        // Traitement des photos uploadées
+        // 1. Créer une publication vide pour obtenir son _id (urlsPhotos sera mis à jour après renommage)
+        const publication = await Publication.create({ description, user, urlsPhotos: [] });
+
+        // Helper pour ajouter l'id de la publication en préfixe des fichiers
+        const prefixFilesWithPubId = async (filesArr) => {
+            if (!filesArr) return;
+            const uploadsDir = path.join(process.cwd(), 'uploads');
+            await Promise.all(
+                filesArr.map(async (file) => {
+                    // Découpe le nom en segments séparés par « - »
+                    const segments = file.filename.split('-');
+                    // Remplace le premier segment (tmp ou ancien id) par le vrai id de la publication
+                    segments[0] = publication._id.toString();
+                    const newFilename = segments.join('-');
+                    const newPath = path.join(uploadsDir, newFilename);
+                    try {
+                        // Renomme seulement si le nom change
+                        if (newFilename !== file.filename) {
+                            await fs.promises.rename(file.path, newPath);
+                        }
+                        file.filename = newFilename;
+                        file.path = newPath;
+                    } catch (err) {
+                        console.error(`Erreur renommage fichier ${file.filename}`, err);
+                    }
+                })
+            );
+        };
+
+        // 2. Renommer les photos de publication et d'articles
+        await prefixFilesWithPubId(req.files && req.files['publicationPhoto']);
+        await prefixFilesWithPubId(req.files && req.files['articlePhotos']);
+
+        // 3. Générer les nouvelles URLs des photos de publication
         let urlsPhotos = [];
         if (req.files && req.files['publicationPhoto']) {
-            // On stocke l'URL relative pour pouvoir servir les images via /uploads
-            urlsPhotos = req.files['publicationPhoto'].map(file => `/uploads/${file.filename}`);
+            urlsPhotos = req.files['publicationPhoto'].map((file) => `/uploads/${file.filename}`);
         }
 
-        // Facultatif : associer les noms de fichiers des photos d'articles si besoin
-        if (req.files && req.files['articlePhotos'] && Array.isArray(articles)) {
-            // On suppose que les photos sont envoyées dans le même ordre que les articles côté front
-            req.files['articlePhotos'].forEach((file, idx) => {
-                if (articles[idx]) {
-                    articles[idx].urlPhoto = `/uploads/${file.filename}`;
-                }
-            });
-        }
+        // 4. Mettre à jour la publication avec les urlsPhotos renommées
+        publication.urlsPhotos = urlsPhotos;
+        await publication.save();
 
-        // Création de la publication
-        const publication = await Publication.create({ description, user, urlsPhotos });
-
-        // Création des articles associés
+        // 5. Préparer et créer les articles (en injectant la bonne urlPhoto)
         let createdArticles = [];
         if (Array.isArray(articles) && articles.length > 0) {
+            if (req.files && req.files['articlePhotos']) {
+                req.files['articlePhotos'].forEach((file, idx) => {
+                    if (articles[idx]) {
+                        articles[idx].urlPhoto = `/uploads/${file.filename}`;
+                    }
+                });
+            }
+
             const articlesToCreate = articles
-                .map(a => ({
+                .map((a) => ({
                     ...a,
                     // titres
                     titre: a.titre || a.title,
@@ -58,14 +90,15 @@ exports.createPublication = async (req, res) => {
                     user,
                 }))
                 // on ne garde que ceux qui ont un titre et une photo (urlPhoto) pour respecter les champs required
-                .filter(a => a.titre && a.urlPhoto);
+                .filter((a) => a.titre && a.urlPhoto);
+
             createdArticles = await Article.insertMany(articlesToCreate);
         }
 
-        res.status(201).json({ publication, articles: createdArticles });
+        return res.status(201).json({ publication, articles: createdArticles });
     } catch (error) {
         console.error('Erreur dans createPublication:', error);
-        res.status(500).json({ message: error.message });
+        return res.status(500).json({ message: error.message });
     }
 };
 
@@ -128,10 +161,51 @@ exports.updatePublication = async (req, res) => {
 // @route   DELETE /api/publications/:id
 exports.deletePublication = async (req, res) => {
     try {
-        await Publication.findByIdAndRemove(req.params.id);
-        res.status(200).json({ message: 'Publication supprimée' });
+        const { id } = req.params;
+
+        // Vérifier l'existence de la publication
+        const publication = await Publication.findById(id);
+        if (!publication) {
+            return res.status(404).json({ message: 'Publication non trouvée' });
+        }
+
+        // TODO : Vérifier que l'utilisateur authentifié est bien propriétaire ou admin
+
+        // 1. Récupérer les chemins des photos liés à la publication et à ses articles
+        const filesToDelete = [];
+
+        if (Array.isArray(publication.urlsPhotos)) {
+            filesToDelete.push(...publication.urlsPhotos);
+        }
+
+        // Récupère les articles liés pour supprimer leurs éventuelles photos
+        const relatedArticles = await Article.find({ publication: id });
+        relatedArticles.forEach((art) => {
+            if (art.urlPhoto) filesToDelete.push(art.urlPhoto);
+        });
+
+        // 2. Supprimer les fichiers du disque
+        const uploadsDir = path.join(process.cwd(), 'uploads');
+        filesToDelete.forEach((relativePath) => {
+            try {
+                const absolutePath = path.join(uploadsDir, path.basename(relativePath));
+                if (fs.existsSync(absolutePath)) {
+                    fs.unlinkSync(absolutePath);
+                }
+            } catch (err) {
+                console.error('Erreur suppression fichier', relativePath, err);
+            }
+        });
+
+        // 3. Supprimer la publication et ses articles associés
+        await Publication.findByIdAndDelete(id);
+        await Article.deleteMany({ publication: id });
+
+        // 4. Réponse OK
+        return res.status(204).end();
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        console.error('Erreur suppression publication :', err);
+        return res.status(500).json({ message: 'Erreur serveur' });
     }
 };
 

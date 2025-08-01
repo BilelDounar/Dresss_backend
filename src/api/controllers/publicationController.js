@@ -171,35 +171,28 @@ exports.deletePublication = async (req, res) => {
 
         // TODO : Vérifier que l'utilisateur authentifié est bien propriétaire ou admin
 
-        // 1. Récupérer les chemins des photos liés à la publication et à ses articles
-        const filesToDelete = [];
-
-        if (Array.isArray(publication.urlsPhotos)) {
-            filesToDelete.push(...publication.urlsPhotos);
-        }
-
-        // Récupère les articles liés pour supprimer leurs éventuelles photos
-        const relatedArticles = await Article.find({ publication: id });
-        relatedArticles.forEach((art) => {
-            if (art.urlPhoto) filesToDelete.push(art.urlPhoto);
-        });
-
-        // 2. Supprimer les fichiers du disque
+        // 1. Supprimer toutes les images dont le nom contient l'id de la publication
         const uploadsDir = path.join(process.cwd(), 'uploads');
-        filesToDelete.forEach((relativePath) => {
-            try {
-                const absolutePath = path.join(uploadsDir, path.basename(relativePath));
-                if (fs.existsSync(absolutePath)) {
-                    fs.unlinkSync(absolutePath);
+        try {
+            const allFiles = fs.readdirSync(uploadsDir);
+            allFiles.forEach((fileName) => {
+                // Les fichiers sont nommés <publicationId>-<userId>-...
+                if (fileName.startsWith(id)) {
+                    const filePath = path.join(uploadsDir, fileName);
+                    try {
+                        fs.unlinkSync(filePath);
+                    } catch (err) {
+                        console.error('Erreur suppression fichier', fileName, err);
+                    }
                 }
-            } catch (err) {
-                console.error('Erreur suppression fichier', relativePath, err);
-            }
-        });
+            });
+        } catch (err) {
+            console.error('Erreur lecture dossier uploads', err);
+        }
 
         // 3. Supprimer la publication et ses articles associés
         await Publication.findByIdAndDelete(id);
-        await Article.deleteMany({ publication: id });
+        await Article.deleteMany({ publicationId: id });
 
         // 4. Réponse OK
         return res.status(204).end();

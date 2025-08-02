@@ -8,6 +8,9 @@ const fs = require('fs');
 const app = express();
 
 const publicationRoutes = require('./api/routes/publicationRoutes');
+const followRoutes = require('./api/routes/followRoutes');
+const notificationRoutes = require('./api/routes/notificationRoutes');
+const likeRoutes = require('./api/routes/likeRoutes');
 
 // --- Middlewares ---
 
@@ -39,7 +42,9 @@ if (process.env.NODE_ENV === 'development') {
 
 // --- Routes ---
 app.use('/api/publications', publicationRoutes);
-
+app.use('/api/follows', followRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/likes', likeRoutes);
 
 // Route de test pour vérifier que le serveur fonctionne
 app.get('/', (req, res) => {

@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const Publication = require('../models/publicationModel');
 const Article = require('../models/articleModel');
 const ViewedPublication = require('../models/viewedPublicationModel');
+const Like = require('../models/likeModel');
+const Notification = require('../models/notificationModel');
 const fs = require('fs');
 const path = require('path');
 
@@ -264,22 +266,53 @@ exports.getPublicationsByUser = async (req, res) => {
 // @route   POST /api/publications/:id/like
 exports.likePublication = async (req, res) => {
     try {
-        const { increment } = req.body;
+        const { increment, user } = req.body;
         const incValue = parseInt(increment, 10);
         if (![1, -1].includes(incValue)) {
-            return res.status(400).json({ message: 'increment must be 1 or -1' });
+            return res.status(400).json({ message: 'increment must be 1 ou -1' });
         }
 
-        const publication = await Publication.findByIdAndUpdate(
-            req.params.id,
-            { $inc: { likes: incValue } },
-            { new: true }
-        );
+        if (!user) {
+            return res.status(400).json({ message: 'user manquant' });
+        }
 
+        // Récupère la publication pour connaître l'auteur et le compteur
+        const publication = await Publication.findById(req.params.id);
         if (!publication) {
             return res.status(404).json({ message: 'Publication non trouvée' });
         }
-        res.status(200).json({ likes: publication.likes });
+
+        const postOwner = publication.user;
+
+        if (incValue === 1) {
+            // Ajout d'un like s'il n'existe pas déjà
+            const already = await Like.exists({ user, postId: publication.id });
+            if (!already) {
+                await Like.create({ user, postId: publication.id, postOwner });
+                publication.likes += 1;
+
+                if (user !== postOwner) {
+                    await Notification.create({
+                        user: postOwner,
+                        from: user,
+                        kind: 'like',
+                        targetId: publication.urlsPhotos?.[0] || null,
+                        targetType: 'post',
+                        text: ' a aimé votre look',
+                    });
+                }
+            }
+        } else {
+            // Suppression d'un like
+            const result = await Like.deleteOne({ user, postId: publication.id });
+            if (result.deletedCount > 0 && publication.likes > 0) {
+                publication.likes -= 1;
+            }
+        }
+
+        await publication.save();
+
+        return res.status(200).json({ likes: publication.likes });
     } catch (err) {
         console.error('Erreur dans likePublication:', err);
         res.status(500).json({ message: err.message });

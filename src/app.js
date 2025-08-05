@@ -11,6 +11,7 @@ const publicationRoutes = require('./api/routes/publicationRoutes');
 const followRoutes = require('./api/routes/followRoutes');
 const notificationRoutes = require('./api/routes/notificationRoutes');
 const likeRoutes = require('./api/routes/likeRoutes');
+const commentRoutes = require('./api/routes/commentRoutes');
 
 // --- Middlewares ---
 
@@ -45,6 +46,7 @@ app.use('/api/publications', publicationRoutes);
 app.use('/api/follows', followRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/likes', likeRoutes);
+app.use('/api/comments', commentRoutes);
 
 // Route de test pour vérifier que le serveur fonctionne
 app.get('/', (req, res) => {

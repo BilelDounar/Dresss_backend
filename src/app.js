@@ -26,7 +26,7 @@ app.use(express.urlencoded({ extended: true }));
 // Active CORS pour autoriser les requêtes cross-origin (depuis votre frontend)
 app.use(cors());
 
-// --- Ensure uploads directory exists (for Multer diskStorage) ---
+// ---  uploads des photos ---
 const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });

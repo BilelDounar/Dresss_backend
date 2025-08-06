@@ -110,16 +110,13 @@ exports.getPublications = async (req, res) => {
     try {
         const { userId } = req.query;
         if (!userId) {
-            // Si aucun userId n'est fourni, on renvoie toutes les publications
             const allPublications = await Publication.find({});
             return res.status(200).json(allPublications);
         }
 
-        // 1. Récupérer les publications vues par cet userId
         const viewedPublications = await ViewedPublication.find({ user: userId });
         const viewedPublicationIds = viewedPublications.map(vp => vp.publication);
 
-        // 2. Récupérer les publications non vues
         const publications = await Publication.find({ _id: { $nin: viewedPublicationIds } });
 
         res.status(200).json(publications);
@@ -165,20 +162,15 @@ exports.deletePublication = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Vérifier l'existence de la publication
         const publication = await Publication.findById(id);
         if (!publication) {
             return res.status(404).json({ message: 'Publication non trouvée' });
         }
 
-        // TODO : Vérifier que l'utilisateur authentifié est bien propriétaire ou admin
-
-        // 1. Supprimer toutes les images dont le nom contient l'id de la publication
         const uploadsDir = path.join(process.cwd(), 'uploads');
         try {
             const allFiles = fs.readdirSync(uploadsDir);
             allFiles.forEach((fileName) => {
-                // Les fichiers sont nommés <publicationId>-<userId>-...
                 if (fileName.startsWith(id)) {
                     const filePath = path.join(uploadsDir, fileName);
                     try {
@@ -192,11 +184,9 @@ exports.deletePublication = async (req, res) => {
             console.error('Erreur lecture dossier uploads', err);
         }
 
-        // 3. Supprimer la publication et ses articles associés
         await Publication.findByIdAndDelete(id);
         await Article.deleteMany({ publicationId: id });
 
-        // 4. Réponse OK
         return res.status(204).end();
     } catch (err) {
         console.error('Erreur suppression publication :', err);
@@ -215,14 +205,12 @@ exports.markPublicationAsViewed = async (req, res) => {
             return res.status(400).json({ message: 'userId manquant' });
         }
 
-        // Vérifier si la publication a déjà été vue par cet utilisateur
         const existingView = await ViewedPublication.findOne({ user: userId, publication: publicationId });
 
         if (existingView) {
             return res.status(200).json({ message: 'Publication déjà marquée comme vue.' });
         }
 
-        // Créer une nouvelle entrée avec l'ID de l'utilisateur (String)
         await ViewedPublication.create({ user: userId, publication: publicationId });
 
         res.status(201).json({ message: 'Publication marquée comme vue.' });

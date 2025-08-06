@@ -1,5 +1,3 @@
-// backend/src/api/controllers/articleController.js
-
 const Article = require('../models/articleModel');
 
 // @desc    Get all articles (optional)

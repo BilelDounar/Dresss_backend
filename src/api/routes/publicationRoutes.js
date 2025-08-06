@@ -1,12 +1,9 @@
-// backend/src/api/routes/publicationRoutes.js
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const path = require('path');
-const crypto = require('crypto');
 const compressImages = require('../../utils/compressImages');
 
-// Stockage en mémoire : les buffers seront compressés puis écrits sur disque par compressImages
+// Compressé avec compressImages
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
@@ -47,7 +44,5 @@ router.route('/:id/view').post(markPublicationAsViewed);
 router.route('/:id/articles').get(getArticlesByPublication);
 
 router.route('/:id/like').post(likePublication);
-
-// router.post('/publications', createPublication);
 
 module.exports = router;

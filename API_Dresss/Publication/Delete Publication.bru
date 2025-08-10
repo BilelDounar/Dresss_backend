@@ -5,7 +5,14 @@ meta {
 }
 
 delete {
-  url: http://localhost:5000/api/publications/688b4fb408def4b7a7dd8697
+  url: http://localhost:5000/api/publications/{{ publication_id }}
   body: none
   auth: inherit
+  headers: {
+    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjA3M2JhODQ3LTM5MTQtNGU3Ny04YWZmLTMxMWM5NTA3YjI0NSIsImVtYWlsIjoiYmlsZWxkb3VuYXIrb25saW5lQGdtYWlsLmNvbSIsInN0YXR1cyI6ImFjdGl2ZSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJpYXQiOjE3NTQ1MTQ4NzQsImV4cCI6MTc1NTExOTY3NH0.6ZvkhkVR9oeEwg1VdO0_lMdQ4Ebgj_xV2r4pwTIbVeA"
+  }
+}
+
+params:path {
+  publication_id: "688a5f60ca89185ad221ae6d"
 }

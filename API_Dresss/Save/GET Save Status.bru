@@ -1,0 +1,14 @@
+meta {
+  name: GET Save Status
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{ base_url }}/api/saves/status/{{ user_id }}/{{ item_id }}/{{ item_type }}
+  body: none
+  auth: inherit
+  headers: {
+    "Authorization": "Bearer {{ jwt }}"
+  }
+}

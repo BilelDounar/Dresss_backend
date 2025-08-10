@@ -1,0 +1,15 @@
+meta {
+  name: GET Likes Count
+  type: http
+  seq: 4
+}
+
+get {
+  url: http://localhost:5000/api/likes/count?postId=688a5f60ca89185ad221ae6d
+  body: none
+  auth: inherit
+}
+
+params:query {
+  postId: 688a5f60ca89185ad221ae6d
+}

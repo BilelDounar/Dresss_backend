@@ -1,0 +1,21 @@
+meta {
+  name: DELETE Unlike
+  type: http
+  seq: 2
+}
+
+delete {
+  url: {{ base_url }}/api/likes
+  body: json
+  auth: inherit
+  headers: {
+    "Authorization": "Bearer {{ jwt }}",
+    "Content-Type": "application/json"
+  }
+}
+
+body:json {
+  {
+    "postId": "{{ post_id }}"
+  }
+}

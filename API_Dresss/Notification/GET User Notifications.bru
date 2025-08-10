@@ -1,0 +1,14 @@
+meta {
+  name: GET User Notifications
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{ base_url }}/api/notifications/user/{{ user_id }}
+  body: none
+  auth: inherit
+  headers: {
+    "Authorization": "Bearer {{ jwt }}"
+  }
+}
